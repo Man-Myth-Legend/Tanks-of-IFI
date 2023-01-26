@@ -10,17 +10,22 @@ public class Tank : MonoBehaviour
 
     public float movementSpeed;
     public float rotateSpeed;
+    public float projectileForce;
 
     public int rotateBarrelThreshold;
-    private int barrelHeading;
     private float tempBarrelHeading;
+    
 
     public GameObject barrel;
+    public GameObject barrelStart;
+    public GameObject barrelEnd;
+
+    public GameObject projectile;
+
     private UI ui;
     // Start is called before the first frame update
     void Start()
     {
-        barrelHeading = (int) barrel.transform.rotation.eulerAngles.x;
         ui = GameObject.FindGameObjectWithTag("UI").GetComponent<UI>();
     }
 
@@ -31,9 +36,23 @@ public class Tank : MonoBehaviour
         {
             Move();
             Rotate();
+            Shoot();
         }
     }
 
+    void Shoot()
+    {
+        if (Input.GetKeyUp(KeyCode.Space))
+        {
+            float rad = (int)barrel.transform.localEulerAngles.x * Mathf.Deg2Rad;
+            double sin = Math.Sin(rad);
+            double cos = Math.Cos(rad);
+            float sinNorm = (float)Math.Round(sin / (sin + cos), 3);
+            float cosNorm = (float)Math.Round(cos / (sin + cos), 3);
+            GameObject shot = Instantiate(projectile, barrelEnd.transform.position, Quaternion.identity);
+            shot.GetComponent<Rigidbody>().AddForce(new Vector3(0, sinNorm, cosNorm) * projectileForce);
+        }
+    }
     void Move()
     {
         if (Input.GetKey(KeyCode.LeftArrow))
@@ -50,25 +69,25 @@ public class Tank : MonoBehaviour
         
         if (Input.GetKey(KeyCode.UpArrow))
         {
-            tempBarrelHeading -= 1;
+            tempBarrelHeading += 1;
         }
         if (Input.GetKey(KeyCode.DownArrow))
         {
-            tempBarrelHeading += 1;
+            tempBarrelHeading -= 1;
         }
         if (tempBarrelHeading == rotateBarrelThreshold || tempBarrelHeading == -rotateBarrelThreshold)
         {
-            if (tempBarrelHeading == rotateBarrelThreshold) {
-                barrel.transform.eulerAngles = new Vector3((int)barrel.transform.eulerAngles.x + 1, 0, 0);
-                barrel.transform.Rotate(new Vector3(1, 0, 0));
-                tempBarrelHeading = 0;
-            }
-            else
+            if (tempBarrelHeading == rotateBarrelThreshold && barrel.transform.localEulerAngles.y == 0 && barrel.transform.localEulerAngles.x != 90)
             {
-                barrel.transform.eulerAngles = new Vector3((int)barrel.transform.eulerAngles.x - 1, 0, 0);
-                tempBarrelHeading = 0;
+                barrel.transform.Rotate(new Vector3(1, 0, 0));
             }
-           ui.UpdateAngle((int)barrel.transform.eulerAngles.x);
+            else if (tempBarrelHeading == -rotateBarrelThreshold && barrel.transform.localEulerAngles.x < 180 && barrel.transform.localEulerAngles.x != 0)
+            {
+                barrel.transform.Rotate(new Vector3(-1, 0, 0));
+            }
+            barrel.transform.localEulerAngles = new Vector3((float)Math.Round((double)barrel.transform.localEulerAngles.x), 0, 0); //Round the angle
+            tempBarrelHeading = 0;
+            ui.UpdateAngle((int)barrel.transform.localEulerAngles.x);
         }
     }
 }
